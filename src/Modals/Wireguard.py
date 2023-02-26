@@ -1,12 +1,11 @@
 from discord import ui, app_commands, TextStyle
 
 class WireguardModal(ui.Modal, title = "Wireguard Modal"):
-    public_key = ui.TextInput(label = "Put your publix key here",
-                              style = TextStyle.short,
-                              placeholder="Put your publix key here",
-                              required = True,
-                              max_length=64,
-                              min_length = 40)
+    name = ui.TextInput(label = "name")
+#    def __init__(self):
+#        self.name = ui.TextInput(label = "name")
+#        super().__init__()
+#        self.add_item()
 
     async def on_submit(self, interaction):
-        interaction.send("Cool") 
+        pass

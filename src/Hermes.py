@@ -4,7 +4,7 @@ from discord import Intents, ui, app_commands
 from logging.handlers import RotatingFileHandler
 from discord.ext.commands import CommandNotFound, command
 
-from src.Modals.Wireguard import WireguardModal
+from src.Embeds.Wireguard import WireguardMenu
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime
@@ -13,17 +13,18 @@ class Hermes(BotBase):
 
     def __init__(self, *args, **kwargs):
 
-        self.prefix = '$'
+        self.prefix = "+"
         self.guild = None
         self.scheduler = AsyncIOScheduler()
         self.ready = False
         self.cog_prefix = "src.cogs."
+
 #        intents = Intents.default()
 #        intents.message_content = True
-        super().__init__(command_prefix = self.prefix,
-                                    intents=Intents.all(),
-                                    *args,
-                                    **kwargs)
+        super().__init__(command_prefix=self.prefix,
+                        intents=Intents.all(),
+                        *args,
+                        **kwargs)
         
 
     def load_cogs(self):
@@ -32,14 +33,25 @@ class Hermes(BotBase):
         cogs = filter(os.path.isfile, list(cogs))
         for cog in cogs:
             cog = cog[:-3].replace('/', '.')
-
             try:
                 asyncio.run(self.load_extension(cog))
                 self.logger.info(f"Cog {cog} loaded.")
+                print("cog loaded")
 
             except Exception as e:
                 self.logger.warning(f"Cog {cog} can not be loaded!")
                 raise e
+
+    async def sync_tree(self):
+        try:
+            synced = await self.tree.sync()
+            if synced:
+                self.logger.info("Tree synced")
+            else:
+                self.logger.warning("Tree not synced!")
+        except Exception as e:
+            print(e)
+            raise
 
     def run(self):
         with open("token", "r") as token_fh:
@@ -59,19 +71,28 @@ class Hermes(BotBase):
 
         if not self.ready:
             self.ready = True
-            self.guild = self.get_guild(716803899440234506)
             self.logger.info("Hermes ready")
+            self.stdout = self.get_channel(810599224718262304)
+            self.guild = self.get_guild(716803899440234506)
+            try:
+                await self.tree.sync(guild=self.guild) 
+            except Exception as e:
+                print(e)
+            #await self.stdout.send("Hey", view=WireguardMenu())
         else:
             self.logger.info("Reconnected")
     
     async def on_message(self, message):
-        if not message.author.bot:
-            print("got message")
+        if not message.author.bot:#and message.author == self.get_user(309723713857650688)
+            await self.process_commands(message)
+
+#            await message.interaction.response.send_modal(WireguardModal())
+
 
     async def on_error(self, err, *args, **kwargs):
         
         if err == "on_command_error":
-            await args[0].send("Something went wrong.")
+            self.logger.debug("on_command_error Something went wrong.")
         else:
             raise exc.original
 
@@ -85,10 +106,6 @@ class Hermes(BotBase):
         else:
             self.logger.debug(exception)
             raise exception
-
-    @command(name="wireguard")
-    async def wg_modal(self, context):
-        await context.send(embed=WireguardModal())
 
     def start_logging(self):
         self.logger = logging.getLogger('discord') # annother loggger for hermes?

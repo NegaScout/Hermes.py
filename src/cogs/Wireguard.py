@@ -1,4 +1,7 @@
+import discord
 from discord.ext.commands import Cog
+from discord import app_commands
+from src.Modals.Wireguard import WireguardModal
 
 class WireguardCog(Cog):
     
@@ -8,7 +11,11 @@ class WireguardCog(Cog):
     @Cog.listener()
     async def on_ready(self):
         pass
-# ADD COMMAND FOR WG MODAL HERE
+    
+    @app_commands.command(name="wireguard")#guild=discord.Object(716803899440234506)
+    @app_commands.guilds(discord.Object(id=716803899440234506))
+    async def wg_modal(self, interaction):
+        await interaction.response.send_modal(WireguardModal())
     
 async def setup(bot):
     await bot.add_cog(WireguardCog(bot))
