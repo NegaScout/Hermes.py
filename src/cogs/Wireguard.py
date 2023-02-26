@@ -12,7 +12,7 @@ class WireguardCog(Cog):
     async def on_ready(self):
         pass
     
-    @app_commands.command(name="wireguard")#guild=discord.Object(716803899440234506)
+    @app_commands.command(name="wireguard")
     @app_commands.guilds(discord.Object(id=716803899440234506))
     async def wg_modal(self, interaction):
         await interaction.response.send_modal(WireguardModal())
