@@ -7,7 +7,7 @@ class WireguardCog(Cog):
     
     @Cog.listener()
     async def on_ready(self):
-        print("Cog ready")
+        pass
 # ADD COMMAND FOR WG MODAL HERE
     
 async def setup(bot):

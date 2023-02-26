@@ -50,7 +50,7 @@ class Hermes(BotBase):
         super().run(self.token, reconnect=True)
 
     async def on_connect(self):
-        self.logging.info("Connected")
+        self.logger.info("Connected")
 
     async def on_disconnect(self):
         self.logger.info("Disconnected")
