@@ -1,4 +1,4 @@
-from src import Hermes 
+from src import HermesBot
 
-bot = Hermes.Hermes()
+bot = HermesBot.Hermes()
 bot.run()
