@@ -1,7 +1,8 @@
 from discord.ext.commands import Bot as BotBase
 from discord import Intents
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from ipaddress import ip_network
+from ipaddress import ip_network, ip_address
+from asyncio import Lock
 class Hermes(BotBase):
 
     def __init__(self, *args, **kwargs):
@@ -22,6 +23,7 @@ class Hermes(BotBase):
         self.db_conn = None
         self.cursor = None
         self.db_ready_future = None
+        self.db_lock = Lock()
         
         # SSH
         self.SSH_CLIENT = None
@@ -34,8 +36,9 @@ class Hermes(BotBase):
         self.ssh_auth_timeout = 60
 
         # WIREGUARD
-        self.wireguard_proxy_hostname = "192.168.122.142"
+        self.wireguard_proxy_hostname = ip_address("192.168.122.142")
         self.wireguard_template_dir = "data/"
+        self.wireguard_target_wg_conf = "/home/user/hermes.conf" #"/etc/wireguard/hermes.conf"
         self.wireguard_subnet = ip_network('10.0.0.0/27')
 #        intents = Intents.default()
 #        intents.message_content = True
@@ -56,9 +59,12 @@ class Hermes(BotBase):
             raise e
 
     def run(self):
+
         with open(self.token_path, "r") as token_fh:
             self.token = token_fh.read()
         self.start_logging()
+        self.logger.info("###########################")
+        self.logger.info("Hermess run")
         self.load_cogs()
         self.logger.info("Hermess run")
         super().run(self.token, reconnect=True)
@@ -73,7 +79,10 @@ class Hermes(BotBase):
     from src.Hermes.wireguard import insert_wireguard_user \
                              ,read_wireguard_users \
                              ,generate_wg_conf \
-                             ,get_next_ip
+                             ,get_next_ip \
+                             ,read_wireguard_ips \
+                             ,user_in_database \
+                             ,update_wireguard_conf
 
     from src.Hermes.paramiko import setup_paramiko \
                                     ,connect_params

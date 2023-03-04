@@ -14,11 +14,7 @@ async def on_ready(self):
         self.setup_paramiko()
         loop = get_event_loop()
         self.db_ready_future = self.ready_database()
-        create_task(self.insert_wireguard_user("hi", 2, "hii"))
-        await self.get_next_ip()
-        #await self.insert_wireguard_user("hi", 2, "hii")
-        #await self.get_next_ip()
-        #self.generate_wg_conf()
+        await self.db_ready_future
         try:
             await self.tree.sync(guild=self.guild) 
         except Exception as e:

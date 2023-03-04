@@ -1,7 +1,7 @@
 from os.path import isfile
 from src.backend.sqlite import self_with_commit, scriptexec
 from sqlite3 import connect, Row
-from asyncio import sleep
+from asyncio import sleep, get_event_loop
 
 async def build_database(self):
     if isfile(self.DB_WIREGUARD_SCHEMA):
@@ -26,7 +26,6 @@ async def ready_database(self):
     self.db_ready_future = None
 
 def wait_for_db_ready(func):
-    #WITH SYNCIO MUTEX, SO DATABASE READ/WRITES ARE ATOMIC!
     async def inner(*args, **kwargs):
         if args[0].db_ready_future is not None:
             await args[0].db_ready_future
