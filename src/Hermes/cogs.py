@@ -9,7 +9,6 @@ def load_cogs(self):
         try:
             asyncio.run(self.load_extension(cog))
             self.logger.info(f"Cog {cog} loaded.")
-            print("cog loaded")
 
         except Exception as e:
             self.logger.warning(f"Cog {cog} can not be loaded!")

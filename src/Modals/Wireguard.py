@@ -1,16 +1,15 @@
 from discord import ui, app_commands, TextStyle
-
-class WireguardModal(ui.Modal, title = "Wireguard Configuration"):
-    wg_pub_key = ui.TextInput(label = "Wireguard public key:")
+from time import time
+class WireguardModal(ui.Modal, title="Wireguard Configuration"):
+    
+    def __init__(self, bot):
+        super().__init__()
+        self.wg_pub_key = ui.TextInput(label = "Wireguard public key:")
+        self.add_item(self.wg_pub_key)
 
     async def on_submit(self, interaction):
-        print("WG MODAL INPUT: " + str(self.wg_pub_key))
+        self.bot.insert_wireguard_user(interaction.user.name,
+                                       interaction.user.id,
+                                       self.wg_pub_key)
         await interaction.response.defer()
     
-    def insert_wireguard_user(db_conn, user_id:int, pub_key:str, date:int):
-        statement = '''INSERT INTO WIREGUARD_USERS VALUES(?, ?, ?)''' 
-        try:
-            self.db_conn.execute((user_id, pub_key, date))
-            self.logger.info(f"{(user_id, pub_key, date)} is inserted into wireguard users db.")
-        except:
-            self.logger.warn("Error when inserting into wg db!")

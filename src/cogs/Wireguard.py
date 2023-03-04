@@ -15,7 +15,7 @@ class WireguardCommand(Cog):
     @app_commands.command(name="wireguard_setup")
     @app_commands.guilds(discord.Object(id=716803899440234506))
     async def wg_modal(self, interaction):
-        await interaction.response.send_modal(WireguardModal())
+        await interaction.response.send_modal(WireguardModal(self.bot))
 
 # regenerate wg conf, fail safe for corruption
 #    @app_commands.command(name="wireguard_refresh")

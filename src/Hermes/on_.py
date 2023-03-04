@@ -1,3 +1,4 @@
+from asyncio import create_task, get_event_loop
 async def on_connect(self):
     self.logger.info("Connected")
 
@@ -8,17 +9,22 @@ async def on_ready(self):
 
     if not self.ready:
         self.ready = True
-        self.logger.info("Hermes ready")
         self.stdout = self.get_channel(810599224718262304)
         self.guild = self.get_guild(716803899440234506)
-        await self.ready_database()
-        await self.build_database()
-        await self.insert_wireguard_user(1, "pub", 2)
-        await self.read_wireguard_users()
+        self.setup_paramiko()
+        loop = get_event_loop()
+        self.db_ready_future = self.ready_database()
+        create_task(self.insert_wireguard_user("hi", 2, "hii"))
+        await self.get_next_ip()
+        #await self.insert_wireguard_user("hi", 2, "hii")
+        #await self.get_next_ip()
+        #self.generate_wg_conf()
         try:
             await self.tree.sync(guild=self.guild) 
         except Exception as e:
             print(e)
+        self.logger.info("Hermes ready")
+        
     else:
         self.logger.info("Reconnected")
 

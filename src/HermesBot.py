@@ -1,33 +1,42 @@
-import asyncio, os
 from discord.ext.commands import Bot as BotBase
-from discord import Intents, ui, app_commands
-from logging.handlers import RotatingFileHandler
-from discord.ext.commands import CommandNotFound, command
-
-from src.Embeds.Wireguard import WireguardMenu
-
+from discord import Intents
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from datetime import datetime
-#https://www.youtube.com/watch?v=4EIy0bw7s-s&list=PLYeOw6sTSy6ZGyygcbta7GcpI8a5-Cooc&index=5
-
-from sqlite3 import connect
-from src.backend.sqlite import with_commit, scriptexec
-
-
+from ipaddress import ip_network
 class Hermes(BotBase):
 
     def __init__(self, *args, **kwargs):
 
+        # DISCORD
+        self.token_path = "token"
         self.prefix = "+"
         self.guild = None
-        self.scheduler = AsyncIOScheduler()
         self.ready = False
         self.cog_prefix = "src.cogs."
 
+        # MISC
+        self.scheduler = AsyncIOScheduler()
+
+        # SQL
         self.DB_PATH = "data/database.db"
         self.DB_WIREGUARD_SCHEMA = "data/build.sql"
         self.db_conn = None
         self.cursor = None
+        self.db_ready_future = None
+        
+        # SSH
+        self.SSH_CLIENT = None
+        self.ssh_key_path = "hermes.key"
+        self.known_hosts_file = "hermes_known_hosts"
+        self.ssh_key = None
+        self.ssh_pub_key = None
+        self.ssh_port = 22
+        self.ssh_username = 'user'#
+        self.ssh_auth_timeout = 60
+
+        # WIREGUARD
+        self.wireguard_proxy_hostname = "192.168.122.142"
+        self.wireguard_template_dir = "data/"
+        self.wireguard_subnet = ip_network('10.0.0.0/27')
 #        intents = Intents.default()
 #        intents.message_content = True
         super().__init__(command_prefix=self.prefix,
@@ -47,7 +56,7 @@ class Hermes(BotBase):
             raise e
 
     def run(self):
-        with open("token", "r") as token_fh:
+        with open(self.token_path, "r") as token_fh:
             self.token = token_fh.read()
         self.start_logging()
         self.load_cogs()
@@ -58,10 +67,16 @@ class Hermes(BotBase):
     from src.Hermes.logging import start_logging
     from src.Hermes.on_ import on_connect, on_disconnect, on_ready, on_message, on_error, on_command_error
     from src.Hermes.database import build_database \
-                             ,ready_database
+                             ,ready_database \
+                             ,wait_for_db_ready
 
     from src.Hermes.wireguard import insert_wireguard_user \
-                             ,read_wireguard_users
+                             ,read_wireguard_users \
+                             ,generate_wg_conf \
+                             ,get_next_ip
+
+    from src.Hermes.paramiko import setup_paramiko \
+                                    ,connect_params
 
 
     
