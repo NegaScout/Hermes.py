@@ -19,11 +19,8 @@ class WireguardModal(ui.Modal, title="Wireguard Configuration"):
             if self.from_view:
                 await interaction.response.edit_message(content="Updated") # delete_after=5.0 will be available in discord.py 2.2
             else:
-                # send ephemeral in the channel
                 await interaction.response.send_message(content="Configured.", ephemeral=True)
-                #await interaction.response.defer()
-            await self.bot.update_wireguard_conf() # stuck
-            print(222)
+            await self.bot.update_wireguard_conf()
 
 class WgOverwritePubkey(ui.View):
 

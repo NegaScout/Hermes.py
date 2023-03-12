@@ -13,6 +13,7 @@ async def on_ready(self):
         self.guild = self.get_guild(716803899440234506)
         self.setup_paramiko()
         loop = get_event_loop()
+        await self.load_wg_hermes_keys()
         self.db_ready_future = self.ready_database()
         await self.db_ready_future
         try:
@@ -20,6 +21,7 @@ async def on_ready(self):
         except Exception as e:
             print(e)
         self.logger.info("Hermes ready")
+        #await self.change_presence(activity=self.presence_on())
         
     else:
         self.logger.info("Reconnected")

@@ -1,53 +1,35 @@
 from discord.ext.commands import Bot as BotBase
 from discord import Intents
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from ipaddress import ip_network, ip_address
-from asyncio import Lock
+
 class Hermes(BotBase):
 
     def __init__(self, *args, **kwargs):
 
+        self.start_logging()
+        self.logger.info("###########################")
+        # CONFIGURATOR
+        self.configurator_init()
         # DISCORD
-        self.token_path = "token"
-        self.prefix = "+"
-        self.guild = None
-        self.ready = False
-        self.cog_prefix = "src.cogs."
-
+        self.discord_init()
         # MISC
         self.scheduler = AsyncIOScheduler()
-
         # SQL
-        self.DB_PATH = "data/database.db"
-        self.DB_WIREGUARD_SCHEMA = "data/build.sql"
-        self.db_conn = None
-        self.cursor = None
-        self.db_ready_future = None
-        self.db_lock = Lock()
-        
-        # SSH
-        self.SSH_CLIENT = None
-        self.ssh_key_path = "hermes.key"
-        self.known_hosts_file = "hermes_known_hosts"
-        self.ssh_key = None
-        self.ssh_pub_key = None
-        self.ssh_port = 22
-        self.ssh_username = 'user'#
-        self.ssh_auth_timeout = 60
-
+        self.database_init()
+        # PARAMIKO
+        self.paramiko_init()
         # WIREGUARD
-        self.wireguard_proxy_hostname = ip_address("192.168.122.142")
-        self.wireguard_template_dir = "data/"
-        self.wireguard_target_wg_conf = "/home/user/hermes.conf" #"/etc/wireguard/hermes.conf"
-        self.wireguard_subnet = ip_network('10.0.0.0/27')
-#        intents = Intents.default()
-#        intents.message_content = True
+        self.wireguard_init()
+        # LINODE
+        self.linode_init()
+
         super().__init__(command_prefix=self.prefix,
-                        intents=Intents.all(),
-                        *args,
-                        **kwargs)
+                         intents=Intents.all(),
+                         *args,
+                         **kwargs)
         
     async def sync_tree(self):
+
         try:
             synced = await self.tree.sync()
             if synced:
@@ -60,32 +42,50 @@ class Hermes(BotBase):
 
     def run(self):
 
+        self.logger.info("Hermess run")
         with open(self.token_path, "r") as token_fh:
             self.token = token_fh.read()
-        self.start_logging()
-        self.logger.info("###########################")
-        self.logger.info("Hermess run")
+
         self.load_cogs()
-        self.logger.info("Hermess run")
         super().run(self.token, reconnect=True)
-    
+
+    from src.Hermes.configurator import configurator_init
+    from src.Hermes.discord import discord_init
     from src.Hermes.cogs import load_cogs
     from src.Hermes.logging import start_logging
-    from src.Hermes.on_ import on_connect, on_disconnect, on_ready, on_message, on_error, on_command_error
-    from src.Hermes.database import build_database \
-                             ,ready_database \
-                             ,wait_for_db_ready
+    from src.Hermes.on_ import on_connect \
+                                ,on_disconnect \
+                                ,on_ready \
+                                ,on_message \
+                                ,on_error \
+                                ,on_command_error
 
-    from src.Hermes.wireguard import insert_wireguard_user \
-                             ,read_wireguard_users \
-                             ,generate_wg_conf \
-                             ,get_next_ip \
-                             ,read_wireguard_ips \
-                             ,user_in_database \
-                             ,update_wireguard_conf
+    from src.Hermes.database import database_init \
+                                    ,build_database \
+                                    ,ready_database \
+                                    ,wait_for_db_ready
 
-    from src.Hermes.paramiko import setup_paramiko \
+    from src.Hermes.wireguard import wireguard_init \
+                                    ,insert_wireguard_user \
+                                    ,read_wireguard_users \
+                                    ,generate_wg_conf \
+                                    ,get_next_ip \
+                                    ,read_wireguard_ips \
+                                    ,user_in_database \
+                                    ,update_wireguard_conf \
+                                    ,load_wg_hermes_keys
+
+    from src.Hermes.paramiko import paramiko_init \
+                                    ,setup_paramiko \
                                     ,connect_params
 
+    from src.Hermes.linode import linode_init \
+                                  ,fetch_linodes \
+                                  ,create_linode \
+                                  ,delete_linode \
+                                  ,fetch_dns_records \
+                                  ,add_dns_record \
+                                  ,delete_dns_record
 
+    from src.Hermes.presence import presence_starting, presence_updating_db, presence_updating_wg, presence_on
     

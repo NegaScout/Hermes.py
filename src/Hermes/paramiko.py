@@ -1,5 +1,16 @@
 import paramiko
 
+def paramiko_init(self):
+    config_predir = self.config['Paramiko'] 
+    self.ssh_key_path = config_predir['ssh_key_path']
+    self.known_hosts_file = config_predir['known_hosts_file']
+    self.ssh_port = int(config_predir['ssh_port'])
+    self.ssh_username = config_predir['ssh_username']
+    self.ssh_auth_timeout = int(config_predir['ssh_auth_timeout'])
+    self.SSH_CLIENT = None
+    self.ssh_key = None
+    self.ssh_pub_key = None
+
 def setup_paramiko(self):
     try:
         self.SSH_CLIENT = paramiko.client.SSHClient()

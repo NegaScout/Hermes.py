@@ -1,7 +1,16 @@
 from os.path import isfile
 from src.backend.sqlite import self_with_commit, scriptexec
 from sqlite3 import connect, Row
-from asyncio import sleep, get_event_loop
+from asyncio import sleep, get_event_loop, Lock
+
+def database_init(self):
+    config_predir = self.config['Database'] 
+    self.DB_PATH = config_predir['DB_PATH']
+    self.DB_WIREGUARD_SCHEMA = config_predir['DB_WIREGUARD_SCHEMA']
+    self.db_conn = None
+    self.cursor = None
+    self.db_ready_future = None
+    self.db_lock = Lock()
 
 async def build_database(self):
     if isfile(self.DB_WIREGUARD_SCHEMA):
