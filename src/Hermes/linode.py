@@ -2,107 +2,136 @@ import subprocess
 from json import loads as json_loads
 from ipaddress import ip_address
 
+"""
+sync_tree docstring
+"""
+
+
 def linode_init(self):
-    config_predir = self.config['Linode'] 
-    self.linode_type = config_predir['linode_type']
-    self.linode_reagion = config_predir['linode_reagion']
-    self.linode_auth_users = config_predir['linode_auth_users']
-    self.linode_image = config_predir['linode_image']
-    self.linode_dns_ttl = config_predir.getint('linode_dns_ttl')
-    self.linode_domain = config_predir['linode_domain']
+    """
+    sync_tree docstring
+    """
+    config_predir = self.config["Linode"]
+    self.linode_type = config_predir["linode_type"]
+    self.linode_reagion = config_predir["linode_reagion"]
+    self.linode_auth_users = config_predir["linode_auth_users"]
+    self.linode_image = config_predir["linode_image"]
+    self.linode_dns_ttl = config_predir.getint("linode_dns_ttl")
+    self.linode_domain = config_predir["linode_domain"]
     self.linode_ip = None
     self.linode_domain_id = None
     self.linode_record_id = None
     self.linode_id = None
 
+
 def fetch_linodes(self):
-    linode_command = ["linode-cli",
-                      "linodes",
-                      "list",
-                      "--json"]
+    """
+    sync_tree docstring
+    """
+    linode_command = ["linode-cli", "linodes", "list", "--json"]
     proc = subprocess.run(linode_command, shell=True, capture_output=True)
     response = json_loads(proc.stdout)
     return response
 
+
 def create_linode(self):
+    """
+    sync_tree docstring
+    """
 
     root_password = self.generate_password()
-    linode_command = ["linode-cli",
-                      "linodes",
-                      "create",
-                      "--json",
-                      "--type",
-                      self.linode_type,
-                      "--region",
-                      self.linode_reagion,
-                      "--root_pass",
-                      root_password,
-                      "--authorized_users",
-                      self.linode_auth_users,
-                      "--label",
-                      "wireguard"
-                      ]
+    linode_command = [
+        "linode-cli",
+        "linodes",
+        "create",
+        "--json",
+        "--type",
+        self.linode_type,
+        "--region",
+        self.linode_reagion,
+        "--root_pass",
+        root_password,
+        "--authorized_users",
+        self.linode_auth_users,
+        "--label",
+        "wireguard",
+    ]
     proc = subprocess.run(linode_command, shell=True, capture_output=True)
     response = json_loads(proc.stdout)[0]
-    if not response.get('id', False):
+    if not response.get("id", False):
         return False
     else:
-        self.linode_ip = ip_address(response['ipv4'])
-        self.linode_id = response['id']
+        self.linode_ip = ip_address(response["ipv4"])
+        self.linode_id = response["id"]
         return response
 
+
 def delete_linode(self):
-    linode_command = ["linode-cli",
-                    "linodes",
-                    "delete",
-                    "--json",
-                    self.linode_id
-                    ]
+    """
+    sync_tree docstring
+    """
+    linode_command = ["linode-cli", "linodes", "delete", "--json", self.linode_id]
     proc = subprocess.run(linode_command, shell=True, capture_output=True)
     # delete does not return anything, will have to fetch linodes again and look
     return json_loads(proc.stdout)
 
+
 def fetch_dns_records(self):
-    linode_command = ["linode-cli",
-                        "domains",
-                        "records-list",
-                        "--json",
-                        self.linode_domain_id
-                        ]
+    """
+    sync_tree docstring
+    """
+    linode_command = [
+        "linode-cli",
+        "domains",
+        "records-list",
+        "--json",
+        self.linode_domain_id,
+    ]
 
     proc = subprocess.run(linode_command, shell=True, capture_output=True)
     return json_loads(proc.stdout)
+
 
 def add_dns_record(self, subdomain_name, ip):
-    linode_command = ["linode-cli",
-                        "domains",
-                        "records-create",
-                        "--json",
-                        "--type",
-                        "A",
-                        "--ttl_sec",
-                        self.linode_dns_ttl,
-                        "--name",
-                        subdomain_name + '.' + self.linode_domain,
-                        "--target",
-                        ip,
-                        self.linode_domain_id
-                        ]
+    """
+    sync_tree docstring
+    """
+    linode_command = [
+        "linode-cli",
+        "domains",
+        "records-create",
+        "--json",
+        "--type",
+        "A",
+        "--ttl_sec",
+        self.linode_dns_ttl,
+        "--name",
+        subdomain_name + "." + self.linode_domain,
+        "--target",
+        ip,
+        self.linode_domain_id,
+    ]
     proc = subprocess.run(linode_command, shell=True, capture_output=True)
     return json_loads(proc.stdout)
+
 
 def delete_dns_record(self, linode_record_id):
-    linode_command = ["linode-cli",
-                        "domains",
-                        "records-delete",
-                        self.linode_domain_id,
-                        linode_record_id
-                        ]
+    """
+    sync_tree docstring
+    """
+    linode_command = [
+        "linode-cli",
+        "domains",
+        "records-delete",
+        self.linode_domain_id,
+        linode_record_id,
+    ]
     proc = subprocess.run(linode_command, shell=True, capture_output=True)
     return json_loads(proc.stdout)
 
+
 # create response
-#[{"id": 43564374,
+# [{"id": 43564374,
 # "label": "wireguard",
 #  "group": "",
 #   "status": "provisioning",
@@ -126,7 +155,7 @@ def delete_dns_record(self, linode_record_id):
 #                         "available": false,
 #                          "schedule": {"day": null, "window": null}, "last_successful": null}, "hypervisor": "kvm", "watchdog_enabled": true, "tags": [], "host_uuid": "a1ea5e93d29cfd4cdc6b2f50a8b63995bc780de5"}]
 
-#[{"id": 43563961,
+# [{"id": 43563961,
 # "label": "linode43563961",
 # "group": "",
 # "status": "provisioning",
