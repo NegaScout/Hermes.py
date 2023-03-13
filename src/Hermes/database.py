@@ -1,7 +1,7 @@
 from os.path import isfile
-from src.backend.sqlite import scriptexec
 from sqlite3 import connect, Row
 from asyncio import Lock
+from src.backend.sqlite import scriptexec
 
 """
 sync_tree docstring
@@ -34,6 +34,9 @@ async def build_database(self):
             self.logger.info("Database builded!")
         except Exception as e:
             self.logger.warn(f"Could not build database!\n{e}")
+    else:
+        pass
+        # raise WG SCHEMA NOT FOUND
 
 
 async def ready_database(self):

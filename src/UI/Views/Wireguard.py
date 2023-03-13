@@ -1,6 +1,6 @@
 from discord.ui import View
 from src.UI.Buttons.Common import DismissB
-from src.UI.Buttons.Wireguard import WireguardReconfB
+from src.UI.Buttons.Wireguard import WireguardReconfB, WireguardInstallB
 
 
 """

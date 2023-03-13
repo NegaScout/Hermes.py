@@ -1,4 +1,3 @@
-from asyncio import get_event_loop
 from discord import Object
 
 """
@@ -47,9 +46,7 @@ async def on_message(self, message):
     """
     sync_tree docstring
     """
-    if (
-        not message.author.bot
-    ):  # and message.author == self.get_user(309723713857650688)
+    if not message.author.bot:
         await self.process_commands(message)
 
 

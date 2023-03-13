@@ -1,9 +1,6 @@
-import jinja2
-from src.backend.sqlite import self_with_commit
 from time import time
-from src.Hermes.database import wait_for_db_ready
 from ipaddress import ip_network
-from discord import Object as discordObject
+import jinja2
 from discord.app_commands import Group
 from discord import app_commands
 from src.UI.Modals.Wireguard import WireguardSetupM
@@ -81,12 +78,17 @@ async def load_wg_hermes_keys(self):
     """
 
     if self.wireguard_private_key is not None:
-        with open(self.wireguard_private_key_path, "r") as wg_key_fh:
-            self.wireguard_private_key = wg_key_fh.read()
-
+        try:
+            with open(self.wireguard_private_key_path, "r") as wg_key_fh:
+                self.wireguard_private_key = wg_key_fh.read()
+        except OSError as e:
+            print(e)
     if self.wireguard_public_key is not None:
-        with open(self.wireguard_private_key_path + ".pub", "r") as wg_key_fh:
-            self.wireguard_public_key = wg_key_fh.read()
+        try:
+            with open(self.wireguard_private_key_path + ".pub", "r") as wg_key_fh:
+                self.wireguard_public_key = wg_key_fh.read()
+        except OSError as e:
+            print(e)
 
 
 async def user_in_database(self, user_id):
@@ -211,7 +213,7 @@ async def generate_wg_conf(self):
     return template.render(HOST=host_config, HERMES=hermes, PEERS=wg_users, MISC=misc)
 
 
-async def update_wireguard_conf(self): # raise errors
+async def update_wireguard_conf(self):  # raise errors
     """
     sync_tree docstring
     """
