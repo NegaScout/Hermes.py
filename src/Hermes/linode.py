@@ -1,11 +1,12 @@
 import subprocess
 from json import loads as json_loads
 from ipaddress import ip_address
-
+from discord.app_commands import Group
+from discord import app_commands
+from src.UI.Views.Common import ActionOkV
 """
 sync_tree docstring
 """
-
 
 def linode_init(self):
     """
@@ -18,33 +19,78 @@ def linode_init(self):
     self.linode_image = config_predir["linode_image"]
     self.linode_dns_ttl = config_predir.getint("linode_dns_ttl")
     self.linode_domain = config_predir["linode_domain"]
-    self.linode_ip = None
     self.linode_domain_id = None
     self.linode_record_id = None
+    self.linode_ip = None
     self.linode_id = None
+    self.linode_command_group = LinodeG(
+        self, name="linode", description="linode module"
+    )
+    self.command_groups.append(self.linode_command_group)
 
-
-def fetch_linodes(self):
+class LinodeG(Group):
     """
     sync_tree docstring
     """
-    linode_command = ["linode-cli", "linodes", "list", "--json"]
-    proc = subprocess.run(linode_command, shell=True, capture_output=True)
-    response = json_loads(proc.stdout)
-    return response
 
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bot = bot
+
+    @app_commands.command()
+    async def deploy(self, interaction):
+        """
+        sync_tree docstring
+        """
+        await interaction.response.defer()
+        if self.bot.create_linode():
+            await interaction.followup.send(
+                    view=ActionOkV(label="Linode deployed"), ephemeral=True, silent=True
+            )
+        else:
+            await interaction.followup.send(
+                    view=ActionOkV(label="Could not deploy", succes=False), ephemeral=True, silent=True
+            )
+
+    @app_commands.command()
+    async def destroy(self, interaction):
+        """
+        sync_tree docstring
+        """
+        await interaction.response.defer()
+        if self.bot.delete_linode():
+            await interaction.followup.send(
+                    view=ActionOkV(label="Linode destroyed"), ephemeral=True, silent=True
+            )
+        else:
+            await interaction.followup.send(
+                    view=ActionOkV(label="Could not destroy", succes=False), ephemeral=True, silent=True
+            )
+
+    @app_commands.command()
+    async def fetch(self, interaction):
+        """
+        sync_tree docstring
+        """
+        await interaction.response.defer()
+        self.bot.fetch_linodes()
+        await interaction.followup.send(
+                view=ActionOkV(label="Linode fetched"), ephemeral=True, silent=True
+        )
 
 def create_linode(self):
     """
     sync_tree docstring
     """
-
+    if self.fetch_linodes():
+        return False
     root_password = self.generate_password()
     linode_command = [
         "linode-cli",
         "linodes",
         "create",
         "--json",
+        '--no-defaults',
         "--type",
         self.linode_type,
         "--region",
@@ -53,27 +99,52 @@ def create_linode(self):
         root_password,
         "--authorized_users",
         self.linode_auth_users,
+        '--image',
+        self.linode_image,
         "--label",
-        "wireguard",
+        "wireguard"
     ]
-    proc = subprocess.run(linode_command, shell=True, capture_output=True)
+    command = ' '.join(word for word in linode_command)
+    proc = subprocess.run(command, shell=True, capture_output=True)
     response = json_loads(proc.stdout)[0]
     if not response.get("id", False):
         return False
     else:
-        self.linode_ip = ip_address(response["ipv4"])
+        self.linode_ip = ip_address(response["ipv4"][0])
         self.linode_id = response["id"]
         return response
 
+def fetch_linodes(self):
+    """
+    sync_tree docstring
+    """
+    linode_command = ["linode-cli", "linodes", "list", "--json"]
+    command = ' '.join(word for word in linode_command)
+    proc = subprocess.run(command, shell=True, capture_output=True)
+    response = json_loads(proc.stdout)#[0]
+    if not response:
+        return False
+    else:
+        response = response[0]
+        self.linode_ip = ip_address(response["ipv4"][0])
+        self.linode_id = response["id"]
+        return response
 
 def delete_linode(self):
     """
     sync_tree docstring
     """
-    linode_command = ["linode-cli", "linodes", "delete", "--json", self.linode_id]
-    proc = subprocess.run(linode_command, shell=True, capture_output=True)
-    # delete does not return anything, will have to fetch linodes again and look
-    return json_loads(proc.stdout)
+    if self.fetch_linodes():
+        linode_command = ["linode-cli",
+                          "linodes",
+                          "delete",
+                          "--json",
+                          str(self.linode_id)]
+        command = ' '.join(word for word in linode_command)
+        proc = subprocess.run(command, shell=True, capture_output=True)
+        return True
+        
+    return self.fetch_linodes()
 
 
 def fetch_dns_records(self):

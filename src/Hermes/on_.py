@@ -33,7 +33,10 @@ async def on_ready(self):
         await self.load_wg_hermes_keys()
         self.db_ready_future = self.ready_database()
         await self.db_ready_future
-        self.tree.add_command(self.wireguard_command_group)
+
+        for command in self.command_groups:
+            self.tree.add_command(command)
+
         await self.sync_tree()
         self.logger.info("Hermes ready")
         # await self.change_presence(activity=self.presence_on())

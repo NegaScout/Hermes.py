@@ -32,6 +32,7 @@ def wireguard_init(self):
     self.wireguard_command_group = WireguardG(
         self, name="wireguard", description="Wireguard module"
     )
+    self.command_groups.append(self.wireguard_command_group)
 
 
 class WireguardG(Group):

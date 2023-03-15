@@ -117,3 +117,6 @@ class Hermes(BotBase):
         presence_updating_wg,
         presence_on,
     )
+    from src.Hermes.passwd import (
+        generate_password
+    )

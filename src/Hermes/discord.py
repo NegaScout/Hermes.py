@@ -14,3 +14,4 @@ def discord_init(self):
     self.guild = None
     self.ready = False
     self.token = None
+    self.command_groups = []

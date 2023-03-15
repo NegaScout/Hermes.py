@@ -16,8 +16,7 @@ class WireguardAlreadyConfV(View):
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
-
-        self.add_item(DismissB())
+        self.add_item(DismissB(label="Ok"))
         self.add_item(WireguardReconfB(self.bot))
 
 
