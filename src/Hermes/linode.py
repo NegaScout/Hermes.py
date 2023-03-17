@@ -19,6 +19,7 @@ def linode_init(self):
     self.linode_image = config_predir["linode_image"]
     self.linode_dns_ttl = config_predir.getint("linode_dns_ttl")
     self.linode_domain = config_predir["linode_domain"]
+    self.linode_passwd_file = config_predir["linode_passwd_file"]
     self.linode_domain_id = None
     self.linode_record_id = None
     self.linode_ip = None
@@ -84,7 +85,9 @@ def create_linode(self):
     """
     if self.fetch_linodes():
         return False
-    root_password = self.generate_password()
+    with open(self.linode_passwd_file, 'w') as passwdf_fh:
+        root_password = self.generate_password()
+        passwdf_fh.write(root_password)
     linode_command = [
         "linode-cli",
         "linodes",
@@ -112,6 +115,7 @@ def create_linode(self):
     else:
         self.linode_ip = ip_address(response["ipv4"][0])
         self.linode_id = response["id"]
+        self.run_ansible(self.linode_ip)
         return response
 
 def fetch_linodes(self):

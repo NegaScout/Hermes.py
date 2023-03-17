@@ -31,6 +31,8 @@ class Hermes(BotBase):
         self.wireguard_init()
         # LINODE
         self.linode_init()
+        # ANSIBLE
+        self.ansible_init()
 
         super().__init__(
             command_prefix=self.prefix, intents=Intents.all(), *args, **kwargs
@@ -119,4 +121,8 @@ class Hermes(BotBase):
     )
     from src.Hermes.passwd import (
         generate_password
+    )
+    from src.Hermes.ansible import (
+        ansible_init,
+        run_ansible
     )
