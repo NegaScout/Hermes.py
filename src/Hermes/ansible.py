@@ -60,15 +60,20 @@ def run_ansible(self):
     """
     sync_tree docstring
     """
-    self.fetch_linodes()
+    if not self.linode_fetch_create_promise():
+        return False
+    ssh_user = 'root'
+    if self.paramiko_try_user(self.ssh_username):
+        ssh_user = self.ssh_username
     try:
         with open(path.join(self.ansible_working_dir, self.ansible_inventory), 'w') as inventory_fh:
             inventory_fh.write("[all]\n")
             inventory_fh.write(str(self.linode_ip))
-        runner = Runner(config=self.ansible_runner_config)
-        runner.run()
+        runner = Runner(config=self.ansible_runner_config,
+                        quiet=True,
+                        envvars={'ANSIBLE_REMOTE_USER': ssh_user})
+        runner.run_async()
         # run async
-        # cmdline_args -> změna z roota na hermes usera
         # Runner.event_handler -> na progress
         # Runner.finished_callback -> na end
     except Exception as e:

@@ -1,7 +1,7 @@
 from discord.ext.commands import Bot as BotBase
 from discord import Intents
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
+from discord import app_commands
 """
 Module docstring
 """
@@ -21,6 +21,8 @@ class Hermes(BotBase):
         self.configurator_init()
         # DISCORD
         self.discord_init()
+        # STATUS
+        self.status_init()
         # MISC
         self.scheduler = AsyncIOScheduler()
         # SQL
@@ -33,6 +35,7 @@ class Hermes(BotBase):
         self.linode_init()
         # ANSIBLE
         self.ansible_init()
+
 
         super().__init__(
             command_prefix=self.prefix, intents=Intents.all(), *args, **kwargs
@@ -63,11 +66,9 @@ class Hermes(BotBase):
         sync_tree docstring
         """
         self.logger.info("Hermess run")
-        with open(self.token_path, "r") as token_fh:
-            self.token = token_fh.read()
 
         # self.load_cogs()
-        super().run(self.token, reconnect=True)
+        super().run(self.discord_token, reconnect=True)
 
     from src.Hermes.configurator import configurator_init
     from src.Hermes.discord import discord_init
@@ -101,16 +102,22 @@ class Hermes(BotBase):
         load_wg_hermes_keys,
     )
 
-    from src.Hermes.paramiko import paramiko_init, setup_paramiko, connect_params
+    from src.Hermes.paramiko import (
+        paramiko_init,
+        setup_paramiko,
+        connect_params,
+        paramiko_open_sftp,
+        paramiko_connect,
+        paramiko_try_user
+    )
 
     from src.Hermes.linode import (
         linode_init,
-        fetch_linodes,
         create_linode,
         delete_linode,
-        fetch_dns_records,
         add_dns_record,
         delete_dns_record,
+        update_linode_data
     )
 
     from src.Hermes.presence import (
@@ -125,4 +132,7 @@ class Hermes(BotBase):
     from src.Hermes.ansible import (
         ansible_init,
         run_ansible
+    )
+    from src.Hermes.status import (
+        status_init
     )

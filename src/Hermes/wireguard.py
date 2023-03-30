@@ -33,6 +33,11 @@ def wireguard_init(self):
         self, name="wireguard", description="Wireguard module"
     )
     self.command_groups.append(self.wireguard_command_group)
+    self.status_callbacks.append(wireguard_status)
+
+async def wireguard_status(self):
+    ret = await self.read_wireguard_users()
+    return {'Service': 'Wireguard', 'Domain': '', 'Status': len(ret)}
 
 
 class WireguardG(Group):
@@ -213,31 +218,14 @@ async def generate_wg_conf(self):
 
     return template.render(HOST=host_config, HERMES=hermes, PEERS=wg_users, MISC=misc)
 
-
 async def update_wireguard_conf(self):  # raise errors
     """
     sync_tree docstring
     """
-    # args, kwargs = self.connect_params()
-    # self.change_presence(activity=self.presence_updating_wg())
-    with self.SSH_CLIENT:
-        try:
-            self.SSH_CLIENT.connect(
-                str(self.linode_ip),
-                port=self.ssh_port,
-                username=self.ssh_username,
-                pkey=self.ssh_key,
-                auth_timeout=self.ssh_auth_timeout,
-            )
-        except Exception as e:
-            self.logger.warn(f"Could not connect to {str(self.linode_ip)}")
-        try:
-            with self.SSH_CLIENT.open_sftp() as SFTP_conn:
-                with SFTP_conn.file(self.wireguard_target_wg_conf, mode="w") as fh:
-                    wg_conf_string = await self.generate_wg_conf()
-                    fh.write(wg_conf_string)
-            stdin, stdout, stderr = self.SSH_CLIENT.exec_command("ls -l")
-        except Exception as e:
-            self.logger.warn(f"Could not connect to {str(self.linode_ip)}")
-
-    # await self.change_presence(activity=self.presence_on())
+    with self.SSH_CLIENT, self.SFTP_CHANNEL:
+        if not self.paramiko_connect() or not self.paramiko_open_sftp():
+            return False
+        with self.SFTP_CHANNEL.file(self.wireguard_target_wg_conf, mode="w") as fh:
+            wg_conf_string = await self.generate_wg_conf()
+            fh.write(wg_conf_string)
+        return True

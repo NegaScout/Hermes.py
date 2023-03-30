@@ -1,9 +1,10 @@
-import subprocess
-from json import loads as json_loads
-from ipaddress import ip_address
+from os.path import join 
+from linode_api4 import LinodeClient, Region, Domain, DomainRecord, Image, Type
+from progress.spinner import Spinner
 from discord.app_commands import Group
 from discord import app_commands
 from src.UI.Views.Common import ActionOkV
+
 """
 sync_tree docstring
 """
@@ -13,21 +14,36 @@ def linode_init(self):
     sync_tree docstring
     """
     config_predir = self.config["Linode"]
-    self.linode_type = config_predir["linode_type"]
-    self.linode_reagion = config_predir["linode_reagion"]
-    self.linode_auth_users = config_predir["linode_auth_users"]
-    self.linode_image = config_predir["linode_image"]
+    self.linode_token_path = join(self.config_prefix, "linode", "token")
+    with open(self.linode_token_path, "r") as token_fh:
+        self.linode_token = token_fh.read()
+    self.linode_client = LinodeClient(self.linode_token)
+    self.linode_type = Type(self.linode_client, config_predir["linode_type"])
+    self.linode_region = Region(self.linode_client, config_predir["linode_region"])
+    #self.linode_auth_users = User(self.linode_client, config_predir["linode_auth_users"])
+    self.linode_image = Image(self.linode_client, config_predir["linode_image"])
+    self.linode_domain_id = int(config_predir["linode_domain_id"])
+    self.linode_domain = Domain(self.linode_client, self.linode_domain_id)
+    self.linode_domain_records = {}
     self.linode_dns_ttl = config_predir.getint("linode_dns_ttl")
-    self.linode_domain = config_predir["linode_domain"]
     self.linode_passwd_file = config_predir["linode_passwd_file"]
-    self.linode_domain_id = None
     self.linode_record_id = None
     self.linode_ip = None
-    self.linode_id = None
+    self.linode_instance = None
+    self.linode_create_promise = None
     self.linode_command_group = LinodeG(
         self, name="linode", description="linode module"
     )
     self.command_groups.append(self.linode_command_group)
+    self.status_callbacks.append(linode_status)
+
+async def linode_status(self):
+    self.update_linode_data()
+    if not self.linode_instance:
+        status = 'Off'
+    else:
+        status = self.linode_instance.__dict__['status']
+    return {'Service': 'Linode', 'Domain': '', 'Status': status}
 
 class LinodeG(Group):
     """
@@ -43,200 +59,137 @@ class LinodeG(Group):
         """
         sync_tree docstring
         """
-        await interaction.response.defer()
-        if self.bot.create_linode():
-            await interaction.followup.send(
-                    view=ActionOkV(label="Linode deployed"), ephemeral=True, silent=True
-            )
-        else:
-            await interaction.followup.send(
-                    view=ActionOkV(label="Could not deploy", succes=False), ephemeral=True, silent=True
-            )
+        return await self.bot.create_linode(interaction)
 
     @app_commands.command()
     async def destroy(self, interaction):
         """
         sync_tree docstring
         """
-        await interaction.response.defer()
-        if self.bot.delete_linode():
-            await interaction.followup.send(
-                    view=ActionOkV(label="Linode destroyed"), ephemeral=True, silent=True
-            )
-        else:
-            await interaction.followup.send(
-                    view=ActionOkV(label="Could not destroy", succes=False), ephemeral=True, silent=True
-            )
+        return await self.bot.delete_linode(interaction)
 
     @app_commands.command()
-    async def fetch(self, interaction):
+    async def record_add(self, interaction):
         """
         sync_tree docstring
         """
-        await interaction.response.defer()
-        self.bot.fetch_linodes()
-        await interaction.followup.send(
-                view=ActionOkV(label="Linode fetched"), ephemeral=True, silent=True
+        self.bot.update_linode_data()
+        if not self.bot.linode_instance:
+            await interaction.response.send_message(
+                    view=ActionOkV(label="No active linode", succes=False), ephemeral=True, silent=True
+            )
+            return
+        
+        ret = await self.bot.add_dns_record('minecraft', self.bot.linode_instance.__dict__['ipv4'][0])
+        
+        if not ret:
+            await interaction.response.send_message(
+                    view=ActionOkV(label="Record already present", succes=True), ephemeral=True, silent=True
+            )
+        else:
+            await interaction.response.send_message(
+                    view=ActionOkV(label="Record created", succes=True), ephemeral=True, silent=True
+            )
+
+    @app_commands.command()
+    async def record_delete(self, interaction):
+        """
+        sync_tree docstring
+        """
+        linode_instances = self.bot.linode_client.linode.instances()
+        if linode_instances:
+            self.bot.linode_instance = linode_instances[0]
+        else:
+            self.bot.linode_instance = None
+            await interaction.response.send_message(
+                    view=ActionOkV(label="No active linode", succes=False), ephemeral=True, silent=True
+            )
+            return
+        
+        await self.bot.delete_dns_record('minecraft')
+        await interaction.response.send_message(
+                view=ActionOkV(label="Record deleted", succes=True), ephemeral=True, silent=True
         )
 
-def create_linode(self):
+async def create_linode(self, interaction):
     """
     sync_tree docstring
     """
-    if self.fetch_linodes():
-        return False
-    with open(self.linode_passwd_file, 'w') as passwdf_fh:
-        root_password = self.generate_password()
-        passwdf_fh.write(root_password)
-    linode_command = [
-        "linode-cli",
-        "linodes",
-        "create",
-        "--json",
-        '--no-defaults',
-        "--type",
-        self.linode_type,
-        "--region",
-        self.linode_reagion,
-        "--root_pass",
-        root_password,
-        "--authorized_users",
-        self.linode_auth_users,
-        '--image',
-        self.linode_image,
-        "--label",
-        "wireguard"
-    ]
-    command = ' '.join(word for word in linode_command)
-    proc = subprocess.run(command, shell=True, capture_output=True)
-    response = json_loads(proc.stdout)[0]
-    if not response.get("id", False):
-        return False
-    else:
-        self.linode_ip = ip_address(response["ipv4"][0])
-        self.linode_id = response["id"]
-        self.run_ansible(self.linode_ip)
-        return response
+    await interaction.response.defer()
+    self.update_linode_data()
+    
+    if not self.linode_instance:
+        id_ = interaction.id
 
-def fetch_linodes(self):
-    """
-    sync_tree docstring
-    """
-    linode_command = ["linode-cli", "linodes", "list", "--json"]
-    command = ' '.join(word for word in linode_command)
-    proc = subprocess.run(command, shell=True, capture_output=True)
-    response = json_loads(proc.stdout)#[0]
-    if not response:
-        return False
-    else:
-        response = response[0]
-        self.linode_ip = ip_address(response["ipv4"][0])
-        self.linode_id = response["id"]
-        return response
+        self.linode_instance, password = self.linode_client.linode.instance_create(self.linode_type,
+                                                                        self.linode_region,
+                                                                        image=self.linode_image,
+                                                                        label='wireguard')
 
-def delete_linode(self):
-    """
-    sync_tree docstring
-    """
-    if self.fetch_linodes():
-        linode_command = ["linode-cli",
-                          "linodes",
-                          "delete",
-                          "--json",
-                          str(self.linode_id)]
-        command = ' '.join(word for word in linode_command)
-        proc = subprocess.run(command, shell=True, capture_output=True)
+        await interaction.followup.send(
+                view=ActionOkV(label="Linode deployed"), ephemeral=True, silent=True
+        )
         return True
-        
-    return self.fetch_linodes()
+    elif self.linode_instance:
+        await interaction.followup.send(
+                view=ActionOkV(label="Linode already deployed", succes=True), ephemeral=True, silent=True
+            )
 
-
-def fetch_dns_records(self):
+async def delete_linode(self, interaction):
     """
     sync_tree docstring
     """
-    linode_command = [
-        "linode-cli",
-        "domains",
-        "records-list",
-        "--json",
-        self.linode_domain_id,
-    ]
+    await interaction.response.defer()
+    self.update_linode_data()
 
-    proc = subprocess.run(linode_command, shell=True, capture_output=True)
-    return json_loads(proc.stdout)
+    if self.linode_instance:
+        self.linode_instance.delete()
+        self.linode_instance = None
+    else:
+        await interaction.followup.send(
+                view=ActionOkV(label="Linode already destroyed"), ephemeral=True, silent=True
+        )
+        return
+    linode_instances = self.linode_client.linode.instances()
+    
+    if not linode_instances:
+        await interaction.followup.send(
+                view=ActionOkV(label="Linode destroyed"), ephemeral=True, silent=True
+        )
+    elif linode_instances:
+        await interaction.followup.send(
+                view=ActionOkV(label="Could not destroy", succes=False), ephemeral=True, silent=True
+        )
 
-
-def add_dns_record(self, subdomain_name, ip):
+async def add_dns_record(self, record_name, ip):
     """
     sync_tree docstring
     """
-    linode_command = [
-        "linode-cli",
-        "domains",
-        "records-create",
-        "--json",
-        "--type",
-        "A",
-        "--ttl_sec",
-        self.linode_dns_ttl,
-        "--name",
-        subdomain_name + "." + self.linode_domain,
-        "--target",
-        ip,
-        self.linode_domain_id,
-    ]
-    proc = subprocess.run(linode_command, shell=True, capture_output=True)
-    return json_loads(proc.stdout)
+    for record in self.linode_domain.records:
+        if record.name == record_name:
+            return False
 
+    record = self.linode_domain.record_create('A',
+                                            id=self.linode_domain_id,
+                                                name=record_name,
+                                                target=ip)
+    self.linode_domain_records[record_name] = record
+    return True
 
-def delete_dns_record(self, linode_record_id):
+async def delete_dns_record(self, record_name):
     """
     sync_tree docstring
     """
-    linode_command = [
-        "linode-cli",
-        "domains",
-        "records-delete",
-        self.linode_domain_id,
-        linode_record_id,
-    ]
-    proc = subprocess.run(linode_command, shell=True, capture_output=True)
-    return json_loads(proc.stdout)
+    ret = False
+    for record in self.linode_domain.records:
+        if record.name == record_name:
+            record.delete()
+            ret = True
+    return ret
 
-
-# create response
-# [{"id": 43564374,
-# "label": "wireguard",
-#  "group": "",
-#   "status": "provisioning",
-#    "created": "2023-03-08T18:20:42",
-#     "updated": "2023-03-08T18:20:42",
-#      "type": "g6-nanode-1",
-#       "ipv4": ["192.46.235.117"],
-#        "ipv6": "2a01:7e01::f03c:93ff:fe1e:5ff7/128",
-#         "image": "linode/debian11",
-#          "region": "eu-central",
-#           "specs": {"disk": 25600,
-#                     "memory": 1024,
-#                      "vcpus": 1,
-#                       "transfer": 1000},
-#             "alerts": {"cpu": 90,
-#                         "network_in": 10,
-#                          "network_out": 10,
-#                           "transfer_quota": 80,
-#                            "io": 10000},
-#             "backups": {"enabled": false,
-#                         "available": false,
-#                          "schedule": {"day": null, "window": null}, "last_successful": null}, "hypervisor": "kvm", "watchdog_enabled": true, "tags": [], "host_uuid": "a1ea5e93d29cfd4cdc6b2f50a8b63995bc780de5"}]
-
-# [{"id": 43563961,
-# "label": "linode43563961",
-# "group": "",
-# "status": "provisioning",
-# "created": "2023-03-08T18:06:32",
-# "updated": "2023-03-08T18:06:32",
-# "type": "g6-nanode-1",
-# "ipv4": ["172.104.130.22"],
-# "ipv6": "2a01:7e01::f03c:93ff:fe1e:dc0d/128",
-# "image": "linode/debian11", "region": "eu-central", "specs": {"disk": 25600, "memory": 1024, "vcpus": 1, "transfer": 1000}, "alerts": {"cpu": 90, "network_in": 10, "network_out": 10, "transfer_quota": 80, "io": 10000}, "backups": {"enabled": false, "available": false, "schedule": {"day": null, "window": null}, "last_successful": null}, "hypervisor": "kvm", "watchdog_enabled": true, "tags": [], "host_uuid": "6277e1d363191dbfd71e38409eba0d3e96f44fc9"}]
+def update_linode_data(self):
+    linode_instances = self.linode_client.linode.instances()
+    if linode_instances:
+        self.linode_instance = linode_instances[0]
+    else:
+        self.linode_instance = None
