@@ -55,6 +55,7 @@ class LinodeG(Group):
         self.bot = bot
 
     @app_commands.command()
+    @app_commands.checks.has_role('Hermes Admin')
     async def deploy(self, interaction):
         """
         sync_tree docstring
@@ -62,6 +63,7 @@ class LinodeG(Group):
         return await self.bot.create_linode(interaction)
 
     @app_commands.command()
+    @app_commands.checks.has_role('Hermes Admin')
     async def destroy(self, interaction):
         """
         sync_tree docstring
@@ -69,6 +71,7 @@ class LinodeG(Group):
         return await self.bot.delete_linode(interaction)
 
     @app_commands.command()
+    @app_commands.checks.has_role('Hermes Admin')
     async def record_add(self, interaction):
         """
         sync_tree docstring
@@ -90,8 +93,8 @@ class LinodeG(Group):
             await interaction.response.send_message(
                     view=ActionOkV(label="Record created", succes=True), ephemeral=True, silent=True
             )
-
     @app_commands.command()
+    @app_commands.checks.has_role('Hermes Admin')
     async def record_delete(self, interaction):
         """
         sync_tree docstring
@@ -124,11 +127,15 @@ async def create_linode(self, interaction):
         self.linode_instance, password = self.linode_client.linode.instance_create(self.linode_type,
                                                                         self.linode_region,
                                                                         image=self.linode_image,
-                                                                        label='wireguard')
-
+                                                                        label='wireguard',
+                                                                        authorized_keys=[self.ssh_key_path + '.pub', '/home/honza/.ssh/id_ed25519.pub'])
+        
         await interaction.followup.send(
                 view=ActionOkV(label="Linode deployed"), ephemeral=True, silent=True
         )
+        with open(self.linode_passwd_file, 'w') as password_fh:
+            password_fh.write(password)
+
         return True
     elif self.linode_instance:
         await interaction.followup.send(
@@ -165,6 +172,7 @@ async def add_dns_record(self, record_name, ip):
     """
     sync_tree docstring
     """
+    # check if ips match! otherwise delete/add
     for record in self.linode_domain.records:
         if record.name == record_name:
             return False
@@ -191,5 +199,7 @@ def update_linode_data(self):
     linode_instances = self.linode_client.linode.instances()
     if linode_instances:
         self.linode_instance = linode_instances[0]
+        self.linode_ip = self.linode_instance.__dict__['ipv4'][0]
     else:
         self.linode_instance = None
+        self.linode_ip = None

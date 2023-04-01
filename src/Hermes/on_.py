@@ -1,9 +1,15 @@
+import discord.app_commands.errors
 from discord import Object
-
+from discord.app_commands import CommandTree
 """
 sync_tree docstring
 """
 
+async def on_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
+    if isinstance(error, app_commands.errors.CommandOnCooldown):
+        await interaction.response.send_message(f'Command "{interaction.command.name}" is on cooldown, you can use it in {round(error.retry_after, 2)} seconds.', ephemeral=True)
+    elif isinstance(error, app_commands.errors.MissingRole):
+        await interaction.response.send_message(f'Command "{interaction.command.name}" requieres the {error.missing_role} role.', ephemeral=True)
 
 async def on_connect(self):
     """
@@ -51,32 +57,3 @@ async def on_message(self, message):
     """
     if not message.author.bot:
         await self.process_commands(message)
-
-
-#            await message.interaction.response.send_modal(WireguardModal())
-
-
-async def on_error(self, err, *args, **kwargs):
-    """
-    sync_tree docstring
-    """
-
-    if err == "on_command_error":
-        self.logger.debug("on_command_error Something went wrong.")
-    else:
-        raise err.original
-
-
-async def on_command_error(self, context, exception):
-    """
-    sync_tree docstring
-    """
-
-    if isinstance(exception, CommandNotFound):
-        pass
-    elif hassattr(exception, "original"):
-        self.logger.debug(exception.original)
-        raise exception.original
-    else:
-        self.logger.debug(exception)
-        raise exception

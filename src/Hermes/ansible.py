@@ -1,5 +1,5 @@
 from os import path
-from ansible_runner import Runner, RunnerConfig
+from ansible_runner import Runner, RunnerConfig, run_async
 from discord import app_commands
 from discord.app_commands import Group
 from src.UI.Views.Common import ActionOkV
@@ -22,7 +22,7 @@ def ansible_init(self):
     runner_options = {"private_data_dir": self.ansible_working_dir,
                       "project_dir": self.ansible_working_dir,
                       "playbook": path.join(self.ansible_working_dir, self.ansible_setup_role),
-                      "envvars": ansible_env,
+                      "extravars": ansible_env # envvars
     }
     self.ansible_runner_config = RunnerConfig(**runner_options)
     self.ansible_runner_config.prepare()
@@ -41,6 +41,7 @@ class AnsibleG(Group):
         self.bot = bot
 
     @app_commands.command()
+    @app_commands.checks.has_role('Hermes Admin')
     async def run(self, interaction):
         """
         sync_tree docstring
@@ -60,7 +61,8 @@ def run_ansible(self):
     """
     sync_tree docstring
     """
-    if not self.linode_fetch_create_promise():
+    self.update_linode_data()
+    if not self.linode_instance:
         return False
     ssh_user = 'root'
     if self.paramiko_try_user(self.ssh_username):
@@ -69,9 +71,11 @@ def run_ansible(self):
         with open(path.join(self.ansible_working_dir, self.ansible_inventory), 'w') as inventory_fh:
             inventory_fh.write("[all]\n")
             inventory_fh.write(str(self.linode_ip))
-        runner = Runner(config=self.ansible_runner_config,
-                        quiet=True,
-                        envvars={'ANSIBLE_REMOTE_USER': ssh_user})
+        # rewrite to
+        #ansible_runner.interface.run()
+        run_async()
+        runner = Runner(config=self.ansible_runner_config)
+        print(runner.interface)
         runner.run_async()
         # run async
         # Runner.event_handler -> na progress

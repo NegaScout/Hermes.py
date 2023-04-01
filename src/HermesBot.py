@@ -79,8 +79,7 @@ class Hermes(BotBase):
         on_disconnect,
         on_ready,
         on_message,
-        on_error,
-        on_command_error,
+        on_command_error
     )
 
     from src.Hermes.database import (
