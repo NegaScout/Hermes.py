@@ -31,6 +31,18 @@ def linode_init(self):
     self.linode_ip = None
     self.linode_instance = None
     self.linode_create_promise = None
+
+    try:
+        with open(config_predir["linode_wg_private_key_path"], "r") as wg_key_fh:
+            self.linode_wg_private_key = wg_key_fh.read()
+    except OSError as e:
+        print(e)
+    try:
+        with open(config_predir["linode_wg_private_key_path"] + ".pub", "r") as wg_key_fh:
+            self.linode_wg_public_key = wg_key_fh.read()
+    except OSError as e:
+        print(e)
+
     self.linode_command_group = LinodeG(
         self, name="linode", description="linode module"
     )

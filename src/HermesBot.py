@@ -93,12 +93,11 @@ class Hermes(BotBase):
         wireguard_init,
         insert_wireguard_user,
         read_wireguard_users,
-        generate_wg_conf,
+        generate_linode_wg_conf,
         get_next_ip,
         read_wireguard_ips,
         user_in_database,
         update_wireguard_conf,
-        load_wg_hermes_keys,
     )
 
     from src.Hermes.paramiko import (

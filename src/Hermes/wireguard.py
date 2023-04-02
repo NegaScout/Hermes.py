@@ -20,15 +20,10 @@ def wireguard_init(self):
     """
     config_predir = self.config["Wireguard"]
     self.wireguard_template_dir = config_predir["wireguard_template_dir"]
-    self.wireguard_target_wg_conf = config_predir[
-        "wireguard_target_wg_conf"
-    ]  # "/etc/wireguard/hermes.conf"
+    self.wireguard_target_wg_conf = config_predir["wireguard_target_wg_conf"]
     self.wireguard_subnet = ip_network(config_predir["wireguard_subnet"])
-    self.wireguard_private_key_path = config_predir["wireguard_private_key_path"]
     self.wireguard_port = config_predir.getint("wireguard_port")
     self.PersistentKeepalive = config_predir.getint("PersistentKeepalive")
-    self.wireguard_private_key = config_predir["wireguard_private_key"]
-    self.wireguard_public_key = config_predir["wireguard_public_key"]
     self.wireguard_command_group = WireguardG(
         self, name="wireguard", description="Wireguard module"
     )
@@ -65,6 +60,13 @@ class WireguardG(Group):
             await interaction.response.send_modal(WireguardSetupM(self.bot))
 
     @app_commands.command()
+    async def update(self, interaction):
+        """
+        sync_tree docstring
+        """
+        self.update_wireguard_conf()
+
+    @app_commands.command()
     async def help(self, interaction):
         """
         sync_tree docstring
@@ -76,26 +78,6 @@ class WireguardG(Group):
             )
         else:
             await interaction.response.send_modal(WireguardSetupM(self.bot))
-
-
-async def load_wg_hermes_keys(self):
-    """
-    sync_tree docstring
-    """
-
-    if self.wireguard_private_key is not None:
-        try:
-            with open(self.wireguard_private_key_path, "r") as wg_key_fh:
-                self.wireguard_private_key = wg_key_fh.read()
-        except OSError as e:
-            print(e)
-    if self.wireguard_public_key is not None:
-        try:
-            with open(self.wireguard_private_key_path + ".pub", "r") as wg_key_fh:
-                self.wireguard_public_key = wg_key_fh.read()
-        except OSError as e:
-            print(e)
-
 
 async def user_in_database(self, user_id):
     """
@@ -197,7 +179,7 @@ async def get_next_ip(self):
         self.logger.error(f"Could not read from database!\n{e}")
 
 
-async def generate_wg_conf(self):
+async def generate_linode_wg_conf(self):
     """
     sync_tree docstring
     """
@@ -226,6 +208,6 @@ async def update_wireguard_conf(self):  # raise errors
         if not self.paramiko_connect() or not self.paramiko_open_sftp():
             return False
         with self.SFTP_CHANNEL.file(self.wireguard_target_wg_conf, mode="w") as fh:
-            wg_conf_string = await self.generate_wg_conf()
+            wg_conf_string = await self.generate_linode_wg_conf()
             fh.write(wg_conf_string)
         return True
