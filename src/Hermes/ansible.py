@@ -13,12 +13,13 @@ def ansible_init(self):
     sync_tree docstring
     """
     config_predir = self.config['Ansible']
+    self.ansible_private_dir = config_predir['ansible_private_dir']
     self.ansible_working_dir = config_predir['ansible_working_dir']
-    self.ansible_setup_role = path.join(config_predir['ansible_working_dir'], config_predir['ansible_setup_role'])
+    self.ansible_setup_playbook = path.join(config_predir['ansible_working_dir'], config_predir['ansible_setup_playbook'])
     self.ansible_inventory = config_predir['ansible_inventory']
-    self.ansible_setup_playbook = config_predir['ansible_setup_playbook']
     self.ansible_roles = path.join(config_predir['ansible_working_dir'], 'roles')
     self.linode_runner = None
+    self.ansible_passwd_template = config_predir["ansible_passwd_template"]
     self.ansible_command_group = AnsibleG(
         self, name="ansible", description="ansible module"
     )
@@ -49,16 +50,8 @@ class AnsibleG(Group):
                     view=ActionOkV(label="Could not run ansible", succes=False), ephemeral=True, silent=True
             )
 
-#[defaults]
-#become_password_file = /home/honza/Projects/Ansible/become
-#inventory = /home/honza/Projects/Ansible/inventory
-#remote_user = honza
-#host_key_checking = False
-#private_key_file = /home/honza/.ssh/id_ed25519
-#ansible_managed = This file is manage by Ansible, all changes will be lost.
-#[privilege_escalation]
-#become_method = su
-#become_flags =  "-"
+def status_handler(status, runner_config=None):
+    print(status)
 
 def run_ansible(self):
     """
@@ -71,15 +64,15 @@ def run_ansible(self):
     if self.paramiko_try_user(self.ssh_username):
         ssh_user = self.ssh_username
     try:
-        with open(path.join(self.ansible_working_dir, self.ansible_inventory), 'w') as inventory_fh:
-            inventory_fh.write("[all]\n")
-            inventory_fh.write(str(self.linode_ip))
-
+        with open(path.join(self.ansible_private_dir, 'cmdline'), 'w') as inventory_fh:
+            inventory_fh.write(f"-u {ssh_user}")#
         self.linode_runner = run_async(private_data_dir = self.ansible_private_dir,
                                        playbook = self.ansible_setup_playbook,
                                        inventory = self.ansible_inventory,
                                        roles_path = self.ansible_roles,
-                                       quiet = True)
+                                       quiet = True,
+                                       status_handler= status_handler)
+        print("ansible run")
         # Runner.event_handler -> na progress
         # Runner.finished_callback -> na end
     except Exception as e:

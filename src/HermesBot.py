@@ -115,7 +115,9 @@ class Hermes(BotBase):
         delete_linode,
         add_dns_record,
         delete_dns_record,
-        update_linode_data
+        update_linode_data,
+        record_add,
+        record_delete
     )
 
     from src.Hermes.presence import (
