@@ -1,3 +1,4 @@
+from os.path import basename, dirname
 from time import time
 from ipaddress import ip_network
 import jinja2
@@ -19,8 +20,7 @@ def wireguard_init(self):
     sync_tree docstring
     """
     config_predir = self.config["Wireguard"]
-    self.wireguard_template_dir = config_predir["wireguard_template_dir"]
-    self.wireguard_target_wg_conf = config_predir["wireguard_target_wg_conf"]
+    self.wireguard_template = config_predir["wireguard_template"]
     self.wireguard_subnet = ip_network(config_predir["wireguard_subnet"])
     self.wireguard_port = config_predir.getint("wireguard_port")
     self.PersistentKeepalive = config_predir.getint("PersistentKeepalive")
@@ -64,7 +64,12 @@ class WireguardG(Group):
         """
         sync_tree docstring
         """
-        self.update_wireguard_conf()
+        if self.update_wireguard_conf():
+            await interaction.followup.send(
+                view=ActionOkV(label="Wireguard config updated"), ephemeral=True, silent=True)
+        else:
+            await interaction.followup.send(
+                view=ActionOkV(label="Could not update wireguard config", succes=False), ephemeral=True, silent=True)
 
     @app_commands.command()
     async def help(self, interaction):
@@ -183,31 +188,35 @@ async def generate_linode_wg_conf(self):
     """
     sync_tree docstring
     """
-    fs_loader = jinja2.FileSystemLoader(self.wireguard_template_dir)
+    fs_loader = jinja2.FileSystemLoader(dirname(self.wireguard_template))
     env = jinja2.Environment(loader=fs_loader)
-    template = env.get_template("Wireguard.conf")
+    template = env.get_template(basename(self.wireguard_template))
     wg_users = await self.read_wireguard_users()
 
-    host_config = {"Address": self.linode_ip, "PrivateKey": self.wireguard_private_key}
+    host_config = {"Address": self.linode_ip, "PrivateKey": self.linode_wireguard_private_key}
 
     misc = {"Endpoint": self.linode_ip, "ListenPort": self.wireguard_port}
 
     hermes = {
-        "PUB_KEY": self.wireguard_public_key,
+        "PUB_KEY": self.linode_wireguard_private_key,
         "USER_WG_IP": list(self.wireguard_subnet.hosts())[0],
         "PersistentKeepalive": self.PersistentKeepalive,
     }
 
     return template.render(HOST=host_config, HERMES=hermes, PEERS=wg_users, MISC=misc)
-
+# todo: LINODE HAS FIRST ADRESS, NOT HERMES
 async def update_wireguard_conf(self):  # raise errors
     """
     sync_tree docstring
     """
+    self.SSH_CLIENT = self.paramiko_connect()
+    self.SFTP_CHANNEL = self.paramiko_open_sftp()
+    if not self.SSH_CLIENT or not self.SFTP_CHANNEL:
+        return False 
     with self.SSH_CLIENT, self.SFTP_CHANNEL:
-        if not self.paramiko_connect() or not self.paramiko_open_sftp():
-            return False
-        with self.SFTP_CHANNEL.file(self.wireguard_target_wg_conf, mode="w") as fh:
+        with self.SFTP_CHANNEL.file('/etc/wireguard/linode.conf', mode="w") as fh:
             wg_conf_string = await self.generate_linode_wg_conf()
             fh.write(wg_conf_string)
         return True
+    return False
+#OnUCURuETqGGfeGNkYewSq5dsJd32WMIHz1nJPa0ZEw=

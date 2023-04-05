@@ -19,6 +19,8 @@ def paramiko_init(self):
     self.SFTP_CHANNEL = None
     self.ssh_key = None
     self.ssh_pub_key = None
+    self.setup_paramiko()
+
 
 
 def setup_paramiko(self):
@@ -59,7 +61,7 @@ def paramiko_try_user(self, user):
                 str(self.linode_ip),
                 port=self.ssh_port,
                 username=user,
-                pkey=self.ssh_key,
+                key_filename=self.ssh_key,
                 auth_timeout=self.ssh_auth_timeout,
             )
         except Exception as e:
@@ -69,12 +71,13 @@ def paramiko_try_user(self, user):
     return status
     
 def paramiko_connect(self):
+    self.update_linode_data()
     try:
         self.SSH_CLIENT.connect(
             str(self.linode_ip),
             port=self.ssh_port,
             username=self.ssh_username,
-            pkey=self.ssh_key,
+            key_filename=self.ssh_key_path,
             auth_timeout=self.ssh_auth_timeout,
         )
     except Exception as e:
@@ -83,19 +86,20 @@ def paramiko_connect(self):
                 str(self.linode_ip),
                 port=self.ssh_port,
                 username='root',
-                pkey=self.ssh_key,
+                key_filename=self.ssh_key_path,
                 auth_timeout=self.ssh_auth_timeout,
             )
         except Exception as e:
             self.logger.warn(f"Could not connect to {str(self.linode_ip)}")
             return False
-    return True
+    return self.SSH_CLIENT
 
 def paramiko_open_sftp(self):
+    self.update_linode_data()
     try:
         self.SFTP_CHANNEL = self.SSH_CLIENT.open_sftp()
     except Exception as e:
         self.logger.warn(f"Could not connect to {str(self.linode_ip)}")
         return False
     else:
-        return True
+        return self.SFTP_CHANNEL

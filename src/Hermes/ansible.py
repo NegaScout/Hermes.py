@@ -72,7 +72,6 @@ def run_ansible(self):
                                        roles_path = self.ansible_roles,
                                        quiet = True,
                                        status_handler= status_handler)
-        print("ansible run")
         # Runner.event_handler -> na progress
         # Runner.finished_callback -> na end
     except Exception as e:

@@ -35,7 +35,6 @@ async def on_ready(self):
         self.stdout = self.get_channel(810599224718262304)
         self.guild = self.get_guild(716803899440234506)
         self.guild_snowflake = Object(716803899440234506)
-        self.setup_paramiko()
         self.db_ready_future = self.ready_database()
         await self.db_ready_future
 
