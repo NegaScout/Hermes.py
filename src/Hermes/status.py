@@ -17,15 +17,19 @@ def status_init(self):
     self.status_callbacks = []
     self.status_accumulator = {}
 
-def register_status_callback(self, status):
-    """
-    sync_tree docstring
-    """
-    for key in status.keys():
-        if key not in self.status_accumulator:
-            self.status_accumulator[key] = [status[key]]
-        else:
-            self.status_accumulator[key].append(status[key])
+def status_hup_handler(self):
+    print("Status recieved hup")
+
+# not used
+#def register_status_callback(self, status):
+#    """
+#    sync_tree docstring
+#    """
+#    for key in status.keys():
+#        if key not in self.status_accumulator:
+#            self.status_accumulator[key] = [status[key]]
+#        else:
+#            self.status_accumulator[key].append(status[key])
 
 class StatusG(Group):
     """

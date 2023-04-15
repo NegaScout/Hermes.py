@@ -1,4 +1,5 @@
 from os import path
+from io import FileIO
 from ansible_runner import Runner, RunnerConfig, run_async
 from discord import app_commands
 from discord.app_commands import Group
@@ -20,6 +21,7 @@ def ansible_init(self):
     self.ansible_roles = path.join(config_predir['ansible_working_dir'], 'roles')
     self.linode_runner = None
     self.ansible_passwd_template = config_predir["ansible_passwd_template"]
+    self.ansible_out_dump = config_predir["ansible_out_dump"]
     self.ansible_command_group = AnsibleG(
         self, name="ansible", description="ansible module"
     )
@@ -71,7 +73,9 @@ def run_ansible(self):
                                        inventory = self.ansible_inventory,
                                        roles_path = self.ansible_roles,
                                        quiet = True,
-                                       status_handler= status_handler)
+                                       status_handler= status_handler,
+                                       _output=FileIO(self.ansible_out_dump, mode = 'w'),
+                                       _input=FileIO('/dev/null', mode = 'r'))
         # Runner.event_handler -> na progress
         # Runner.finished_callback -> na end
     except Exception as e:

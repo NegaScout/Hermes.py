@@ -2,6 +2,7 @@ from discord.ext.commands import Bot as BotBase
 from discord import Intents
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord import app_commands
+from os import getpid
 """
 Module docstring
 """
@@ -14,9 +15,13 @@ class Hermes(BotBase):
     """
 
     def __init__(self, *args, **kwargs):
-
+        print(f"The pid is: {getpid()}")
         self.start_logging()
         self.logger.info("###########################")
+        
+        # SIGNALS
+        self.signals_init()
+
         # CONFIGURATOR
         self.configurator_init()
         # DISCORD
@@ -35,7 +40,6 @@ class Hermes(BotBase):
         self.linode_init()
         # ANSIBLE
         self.ansible_init()
-
 
         super().__init__(
             command_prefix=self.prefix, intents=Intents.all(), *args, **kwargs
@@ -134,5 +138,9 @@ class Hermes(BotBase):
         run_ansible
     )
     from src.Hermes.status import (
-        status_init
+        status_init,
+        status_hup_handler
+    )
+    from src.Hermes.signals import (
+        signals_init
     )
