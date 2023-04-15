@@ -42,7 +42,7 @@ class Hermes(BotBase):
         self.ansible_init()
 
         super().__init__(
-            command_prefix=self.prefix, intents=Intents.all(), *args, **kwargs
+            command_prefix=';', intents=Intents.all(), *args, **kwargs
         )
 
     async def sync_tree(self):
@@ -142,5 +142,6 @@ class Hermes(BotBase):
         status_hup_handler
     )
     from src.Hermes.signals import (
-        signals_init
+        signals_init,
+        signals_init_async
     )
