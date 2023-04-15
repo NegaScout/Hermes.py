@@ -9,6 +9,7 @@ from src.UI.Views.Wireguard import (
     WireguardAlreadyConfV,
     WireguardInstallV,
 )
+from asyncio import Lock
 
 """
 sync_tree docstring
@@ -29,6 +30,10 @@ def wireguard_init(self):
     )
     self.command_groups.append(self.wireguard_command_group)
     self.status_callbacks.append(wireguard_status)
+    self.wireguard_lock = Lock()
+    async def wireguard_terminate_handler():
+        await self.wireguard_lock.acquire()
+    self.term_callbacks.append(wireguard_terminate_handler) # todo make macro
 
 async def wireguard_status(self):
     ret = await self.read_wireguard_users()

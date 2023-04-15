@@ -1,4 +1,5 @@
 import paramiko
+from asyncio import Lock
 
 """
 sync_tree docstring
@@ -20,8 +21,12 @@ def paramiko_init(self):
     self.ssh_key = None
     self.ssh_pub_key = None
     self.setup_paramiko()
+    self.paramiko_lock = Lock()
 
-
+    async def paramiko_terminate_handler():
+        await self.paramiko_lock.acquire()
+    
+    self.term_callbacks.append(paramiko_terminate_handler) # todo make macro
 
 def setup_paramiko(self):
     """

@@ -31,6 +31,7 @@ async def on_ready(self):
     """
 
     if not self.ready:
+        self.signals_init_async()
         self.ready = True
         self.stdout = self.get_channel(810599224718262304)
         self.guild = self.get_guild(716803899440234506)
