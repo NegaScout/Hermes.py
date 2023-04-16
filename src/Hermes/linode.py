@@ -1,11 +1,10 @@
 from os.path import join 
 import jinja2
 from linode_api4 import LinodeClient, Region, Domain, DomainRecord, Image, Type
-from progress.spinner import Spinner
 from discord.app_commands import Group
 from discord import app_commands
 from src.UI.Views.Common import ActionOkV
-
+from asyncio import Lock
 """
 sync_tree docstring
 """
@@ -33,7 +32,7 @@ def linode_init(self):
     self.linode_ip = None
     self.linode_instance = None
     self.linode_create_promise = None
-
+    self.linode_lock = Lock()
     try:
         with open(config_predir["linode_wireguard_private_key"], "r") as wg_key_fh:
             self.linode_wireguard_private_key = wg_key_fh.read()
@@ -49,6 +48,10 @@ def linode_init(self):
         self, name="linode", description="linode module"
     )
     self.command_groups.append(self.linode_command_group)
+    async def linode_terminate_handler():
+        await self.linode_lock.acquire()
+    self.term_callbacks.append(linode_terminate_handler) # todo make macro
+    
     self.status_callbacks.append(linode_status)
 
 async def linode_status(self):
