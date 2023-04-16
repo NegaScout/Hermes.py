@@ -1,0 +1,12 @@
+[Unit]
+Description = The Hermes Discord bot.
+Requires = network.target
+
+[Service]
+Type = simple
+ExecStart = /opt/Hermes.py/env/bin/python3 /opt/Hermes.py/main.py
+WorkingDirectory = /opt/Hermes.py
+User = hermes
+
+[Install]
+WantedBy = multi-user.target

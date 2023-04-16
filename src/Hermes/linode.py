@@ -1,7 +1,6 @@
 from os.path import join 
 import jinja2
 from linode_api4 import LinodeClient, Region, Domain, DomainRecord, Image, Type
-from progress.spinner import Spinner
 from discord.app_commands import Group
 from discord import app_commands
 from src.UI.Views.Common import ActionOkV

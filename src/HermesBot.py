@@ -1,6 +1,5 @@
 from discord.ext.commands import Bot as BotBase
 from discord import Intents
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord import app_commands
 from os import getpid
 """
@@ -26,14 +25,12 @@ class Hermes(BotBase):
         self.configurator_init()
 
         with open(self.config['Hermes']['pidfile'], 'w') as pidfh:
-            pidfh.write(getpid())
+            pidfh.write(str(getpid()))
         
         # DISCORD
         self.discord_init()
         # STATUS
         self.status_init()
-        # MISC
-        self.scheduler = AsyncIOScheduler()
         # SQL
         self.database_init()
         # PARAMIKO
