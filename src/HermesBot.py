@@ -15,7 +15,7 @@ class Hermes(BotBase):
     """
 
     def __init__(self, *args, **kwargs):
-        print(f"The pid is: {getpid()}")
+
         self.start_logging()
         self.logger.info("###########################")
         
@@ -24,6 +24,10 @@ class Hermes(BotBase):
 
         # CONFIGURATOR
         self.configurator_init()
+
+        with open(self.config['Hermes']['pidfile'], 'w') as pidfh:
+            pidfh.write(getpid())
+        
         # DISCORD
         self.discord_init()
         # STATUS
