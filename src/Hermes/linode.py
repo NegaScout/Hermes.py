@@ -127,8 +127,6 @@ async def record_add(self, interaction):
         )
         return
     
-    
-    
     if not ret:
         await interaction.response.send_message(
                 view=ActionOkV(label="Record already present", succes=True), ephemeral=True, silent=True
@@ -204,27 +202,28 @@ async def delete_linode(self, interaction):
                 view=ActionOkV(label="Could not destroy", succes=False), ephemeral=True, silent=True
         )
 
-async def add_dns_record(self, record_name, ip):
+async def set_dns_record(self, record_name, ip, record_type):
     """
     sync_tree docstring
     """
-    record = self.linode_domain.record_create('A',
-                                            id=self.linode_domain_id,
-                                                name=record_name,
-                                                target=ip)
-    self.linode_domain_records[record_name] = record
-    return True
-
-async def delete_dns_record(self, record_name):
-    """
-    sync_tree docstring
-    """
-    ret = False
+    already_present = False
     for record in self.linode_domain.records:
         if record.name == record_name:
-            record.delete()
-            ret = True
-    return ret
+            if record.target == ip:
+                if already_present:
+                    record.delete()
+                    continue
+                already_present = True
+            else:
+                record.delete()
+
+    if not already_present and ip is not None:
+        self.linode_domain.record_create(record_type,
+                                                id=self.linode_domain_id,
+                                                name=record_name,
+                                                target=ip)
+
+    return True
 
 def update_linode_data(self):
     linode_instances = self.linode_client.linode.instances()
