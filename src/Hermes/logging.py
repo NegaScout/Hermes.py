@@ -31,3 +31,19 @@ def start_logging(self):
     self.logger.addHandler(handler)
     discord_logger.addHandler(handler)
     discord_http_logger.addHandler(handler)
+
+def log(log_description):
+    def outer(fun):
+        def inner(*args, **kwargs):
+            bot_ = args[0]
+            log_succes = True
+            log_on_succes = True
+            log_level = 'info'
+            log_ret = fun(*args, **kwargs)
+            if not log_succes:
+                getattr(bot_.logger, log_level)(log_description)
+            elif log_succes and log_on_succes:
+                getattr(bot_.logger, log_level)(log_description)
+            return log_ret
+        return inner
+    return outer
