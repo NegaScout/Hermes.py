@@ -33,6 +33,11 @@ def start_logging(self):
     discord_http_logger.addHandler(handler)
 
 def log(log_description):
+    # maybe add to list/dict(error, info, debug) and flush at the end of function
+    def log_error(_log_description):
+        log_level = 'error'
+        log_description_ = _log_description
+
     def outer(fun):
         def inner(*args, **kwargs):
             bot_ = args[0]
@@ -40,10 +45,11 @@ def log(log_description):
             log_on_succes = True
             log_level = 'info'
             log_ret = fun(*args, **kwargs)
+            log_description_ = log_description
             if not log_succes:
-                getattr(bot_.logger, log_level)(log_description)
+                getattr(bot_.logger, log_level)(log_description_)
             elif log_succes and log_on_succes:
-                getattr(bot_.logger, log_level)(log_description)
+                getattr(bot_.logger, log_level)(log_description_)
             return log_ret
         return inner
     return outer
