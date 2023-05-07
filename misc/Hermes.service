@@ -6,8 +6,9 @@ Requires = network.target
 Type = simple
 ExecStart = /opt/Hermes.py/env/bin/python3 /opt/Hermes.py/main.py
 WorkingDirectory = /opt/Hermes.py
-User = hermes
 RuntimeDirectory = hermes
+User = hermes
+Group = minecraft
 
 [Install]
 WantedBy = multi-user.target

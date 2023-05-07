@@ -1,0 +1,20 @@
+[Unit]
+Description = The GTnew minecraft server.
+Requires = network.target
+
+[Service]
+Type = simple
+Environment = JENV_PATH=/opt/minecraft/jenv/bin
+Environment = JAVA_PATH=/opt/minecraft/corretto/corretto-8
+Environment = JAVA_ID=1.8
+Environment = CMD="java -Xms6G -Xmx6G -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseCodeCacheFlushing -Dfml.readTimeout=180 -jar forge-1.7-universal.jar nogui"
+Environment = JENV_ROOT=/opt/minecraft/technic
+PassEnvironment = JENV_PATH JAVA_PATH JAVA_ID CMD MINECRAFT_HOME JENV_ROOT
+ExecStart = /opt/minecraft/java_start.sh
+WorkingDirectory = /opt/minecraft/technic
+User = technic
+Group = minecraft
+ExecStop= kill -2 $MAINPID
+
+[Install]
+WantedBy = multi-user.target
