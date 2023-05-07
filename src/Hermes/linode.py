@@ -79,8 +79,7 @@ class LinodeG(Group):
         """
         ret = await self.bot.create_linode(interaction)
         if ret:
-            ret = await self.bot.add_dns_record('minecraft', self.bot.linode_instance.__dict__['ipv4'][0])
-            ret = await self.bot.add_dns_record('wireguard', self.bot.linode_instance.__dict__['ipv4'][0])
+            ret = await self.bot.set_dns_record('wireguard', self.bot.linode_instance.__dict__['ipv4'][0], 'A')
         return ret
 
     @app_commands.command()
@@ -150,7 +149,7 @@ async def create_linode(self, interaction):
                                                                         self.linode_region,
                                                                         image=self.linode_image,
                                                                         label='wireguard',
-                                                                        authorized_keys=[self.ssh_key_path + '.pub', '/home/honza/.ssh/id_ed25519.pub'])
+                                                                        authorized_keys=['/home/honza/.ssh/id_ed25519.pub']) # self.ssh_key_path + '.pub', 
         self.linode_ip = self.linode_instance.__dict__['ipv4'][0]
         fs_loader = jinja2.FileSystemLoader('config/ansible')
         env = jinja2.Environment(loader=fs_loader)

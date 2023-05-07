@@ -48,7 +48,7 @@ class AnsibleG(Group):
         sync_tree docstring
         """
         await interaction.response.defer()
-        async with self.ansible_runner_lock:
+        async with self.bot.ansible_lock:
             if self.bot.run_ansible():
                 await interaction.followup.send(
                         view=ActionOkV(label="Ansible run"), ephemeral=True, silent=True
